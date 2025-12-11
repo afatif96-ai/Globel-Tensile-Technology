@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Pesticide Dealer Mapping</title>
+
+<!-- Bootstrap CSS -->
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+<!-- FontAwesome -->
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<!-- XLSX Library -->
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+<style>
+    .uploader { background: #fff; border-radius: 12px; box-shadow: 0 6px 20px rgba(24,32,56,0.06); padding: 20px; }
+    .table-preview { max-height: 360px; overflow: auto; }
+    .category-btn { min-width: 170px; }
+    .action-row .btn { min-width: 120px; }
+    .file-meta { font-size: .9rem; color: #6b7280; }
+    .alert-box { margin-bottom: 20px; }
+</style>
+
+</head>
+
+<body class="p-3">
+
+<div class="container-fluid">
+
+<!-- ALERT BOX -->
+<div id="alertBox" class="alert alert-info alert-box d-none" role="alert"></div>
+
+<div class="card mb-4">
+    <div class="card-header"><i class="fa-solid fa-grip me-1"></i>Search</div>
+
+    <div class="card-body">
+
+        <!-- Upload Excel -->
+        <div class="uploader mb-4">
+            <div class="row">
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">Upload Excel File (.xlsx)</label>
+                    <input type="file" id="FU_Excel" class="form-control" accept=".xlsx" />
+                    <span id="fileName" class="file-meta"></span>
+                </div>
+
+                <div class="col-md-2 d-flex align-items-end mt-3 mt-md-0">
+                    <button id="btnVerify" class="btn btn-primary w-100" onclick="btnVerify_Click()">Verify Excel</button>
+                </div>
+
+                <div class="col-md-6 d-flex align-items-end mt-3 mt-md-0">
+                    <div class="w-100">
+                        <label class="form-label fw-semibold">Validation Progress</label>
+                        <div class="progress">
+                            <div id="progressBar" class="progress-bar" role="progressbar" style="width:0%">0%</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats Boxes -->
+        <div class="row g-3" id="statsRow">
+            <div class="col-6 col-md-3">
+                <div class="card p-3 text-center">
+                    <div class="text-muted small">Duplicates</div>
+                    <div id="dupCount" class="fs-4 fw-bold text-warning">0</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="card p-3 text-center">
+                    <div class="text-muted small">Errors</div>
+                    <div id="errCount" class="fs-4 fw-bold text-danger">0</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="card p-3 text-center">
+                    <div class="text-muted small">Date Errors</div>
+                    <div id="dateErrCount" class="fs-4 fw-bold text-info">0</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="card p-3 text-center">
+                    <div class="text-muted small">Valid</div>
+                    <div id="validCount" class="fs-4 fw-bold text-success">0</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Buttons -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start gap-3 mb-3 action-row p-3">
+        <div class="d-flex gap-2 flex-wrap">
+            <button id="btnDownloadDuplicates" class="btn btn-outline-warning category-btn" disabled>Download Duplicates</button>
+            <button id="btnDownloadErrors" class="btn btn-outline-danger category-btn" disabled>Download Errors</button>
+            <button id="btnDownloadDateErrors" class="btn btn-outline-info category-btn" disabled>Download Date Errors</button>
+            <button id="btnDownloadValid" class="btn btn-outline-success category-btn" disabled>Download Valid</button>
+        </div>
+        <div class="d-flex gap-2">
+            <button id="btnRemove" class="btn btn-outline-secondary" disabled>Remove File</button>
+            <button id="btnClearAll" class="btn btn-light">Reset UI</button>
+        </div>
+    </div>
+
+    <!-- Preview Table -->
+    <div class="card m-3">
+        <div class="card-body">
+            <h6 class="card-title mb-3">Preview / Results (Click any cell to live-edit)</h6>
+
+            <div class="table-preview mb-3">
+                <table id="previewTable" class="table table-sm table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>#</th>
+                            <th>Office Type</th>
+                            <th>Dealer Office Name</th>
+                            <th>Dealer Type</th>
+                            <th>Address</th>
+                            <th>Pincode</th>
+                            <th>Mobile No</th>
+                            <th>Phone No</th>
+                            <th>Fax No</th>
+                            <th>Email Id</th>
+                            <th>Contact Person</th>
+                            <th>Contact Person No</th>
+                            <th>Active</th>
+                            <th>State</th>
+                            <th>State LGD Code</th>
+                            <th>Division</th>
+                            <th>Division LGD Code</th>
+                            <th>District</th>
+                            <th>District LGD Code</th>
+                            <th>Block</th>
+                            <th>Block LGD Code</th>
+                            <th>GST/TIN</th>
+                            <th>Status</th>
+                            <th>License No</th>
+                            <th>License Active</th>
+                            <th>Valid To Date</th>
+                            <th>Target Date</th>
+                            <th>Disposal Date</th>
+                            <th>Registration No</th>
+                            <th>Registration Date</th>
+                            <th>Registration Active</th>
+                            <th>Service Name</th>
+                            <th>Category</th>
+                        </tr>
+                    </thead>
+                    <tbody contenteditable="true"></tbody>
+                </table>
+            </div>
+
+        </div>
+    </div>
+
+</div>
+
+</div>
+
+<script>
+let excelData=[], duplicates=[], errors=[], dateErrors=[], valid=[];
+
+function normalizeKeys(row){
+    const map={"Office Type":"Office_Type","Dealer Office Name":"Dealer_Office_Name","Dealer Type":"Dealer_Type",
+        "Mobile No":"Mobile_No","Phone No":"Phone_No","Fax No":"Fax_No","Email Id":"Email_Id",
+        "Contact Person":"Contact_Person","Contact Person No":"Contact_Person_No",
+        "State LGD Code":"State_LGD_Code","District LGD Code":"District_LGD_Code","Division LGD Code":"Division_LGD_Code",
+        "Block LGD Code":"Block_LGD_Code","GST/TIN":"GST_TIN","License No":"Lisence_No","License Active":"Lisence_Active",
+        "Valid To Date":"Valid_To_date","Target Date":"Target_Date","Disposal Date":"Disposal_Date",
+        "Registration No":"Registration_No","Registration Date":"Registration_Date",
+        "Registration Active":"Registration_Active","Service Name":"Service_Name"};
+    let newRow={};
+    for(let key in row){ newRow[map[key]||key]=row[key]; }
+    return newRow;
+}
+
+document.getElementById("FU_Excel").addEventListener("change", function(){
+    document.getElementById("fileName").innerText =
+        this.files[0] ? "Selected: " + this.files[0].name : "";
+});
+
+function showAlert(msg,type){
+    let box=document.getElementById("alertBox");
+    box.innerText=msg;
+    box.className=`alert alert-${type} alert-box`;
+    box.classList.remove("d-none");
+    setTimeout(()=>box.classList.add("d-none"),5000);
+}
+
+function btnVerify_Click(){
+    let file=document.getElementById("FU_Excel").files[0];
+    if(!file){ showAlert("Please upload a file","danger"); return; }
+
+    let reader=new FileReader();
+    reader.readAsArrayBuffer(file);
+    reader.onload=function(e){
+        let workbook=XLSX.read(new Uint8Array(e.target.result),{type:"array"});
+        let sheet=workbook.Sheets[workbook.SheetNames[0]];
+        excelData=XLSX.utils.sheet_to_json(sheet).map(normalizeKeys);
+        processExcel(excelData);
+    };
+}
+
+function checkDate(d){
+    if(!d) return false;
+    let parts=d.split("/");
+    if(parts.length!==3) return false;
+    let dt=new Date(parts[2],parts[1]-1,parts[0]);
+    return dt && dt.getDate()==parts[0] && (dt.getMonth()+1)==parts[1] && dt.getFullYear()==parts[2];
+}
+
+function processExcel(data){
+    duplicates=[]; errors=[]; dateErrors=[]; valid=[];
+
+    let seenGST=new Set(), seenMobile=new Set(), seenEmail=new Set(), seenLicense=new Set();
+    const emailRegex=/^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const mobileRegex=/^\d{10}$/;
+    const pincodeRegex=/^\d{6}$/;
+    const numberFields=["State_LGD_Code","District_LGD_Code","Division_LGD_Code","Block_LGD_Code"];
+
+    data.forEach((row,i)=>{
+        let rowKey=(row.GST_TIN||"")+"|"+(row.Dealer_Office_Name||"");
+
+        if(seenGST.has(rowKey)||seenMobile.has(row.Mobile_No)||seenEmail.has(row.Email_Id)||seenLicense.has(row.Lisence_No)){
+            row.Category="Duplicate"; duplicates.push(row);
+        } else if(!row.Office_Type||!row.Dealer_Office_Name||!row.Mobile_No||!row.State||!row.GST_TIN){
+            row.Category="Error"; errors.push(row);
+        } else if(!mobileRegex.test(row.Mobile_No)||
+                  (row.Pincode && !pincodeRegex.test(row.Pincode))||
+                  (row.Email_Id && !emailRegex.test(row.Email_Id))||
+                  numberFields.some(f=>row[f]&&!Number.isInteger(Number(row[f])))){
+            row.Category="Error"; errors.push(row);
+        } else if(!checkDate(row.Valid_To_date)||!checkDate(row.Target_Date)||!checkDate(row.Disposal_Date)||!checkDate(row.Registration_Date)){
+            row.Category="Date Error"; dateErrors.push(row);
+        } else { row.Category="Valid"; valid.push(row); }
+
+        seenGST.add(rowKey); if(row.Mobile_No) seenMobile.add(row.Mobile_No);
+        if(row.Email_Id) seenEmail.add(row.Email_Id); if(row.Lisence_No) seenLicense.add(row.Lisence_No);
+
+        let percent=Math.round(((valid.length)/data.length)*100);
+        let bar=document.getElementById("progressBar");
+        bar.style.width=percent+"%";
+        bar.innerText=percent+"%";
+    });
+
+    updateCounts(); fillTable(data); enableButtons();
+    showAlert("Excel verified! Valid:"+valid.length+" | Duplicates:"+duplicates.length+" | Errors:"+errors.length+" | Date Errors:"+dateErrors.length,"success");
+
+    // Live validation after edit
+    document.querySelector("#previewTable tbody").addEventListener("input",()=>liveValidation());
+}
+
+function updateCounts(){
+    document.getElementById("dupCount").innerHTML=duplicates.length;
+    document.getElementById("errCount").innerHTML=errors.length;
+    document.getElementById("dateErrCount").innerHTML=dateErrors.length;
+    document.getElementById("validCount").innerHTML=valid.length;
+}
+
+function fillTable(data){
+    let tbody=document.querySelector("#previewTable tbody");
+    tbody.innerHTML="";
+    data.forEach((row,i)=>{
+        let tr=document.createElement("tr");
+        tr.innerHTML=`<td>${i+1}</td>
+        <td>${row.Office_Type||""}</td><td>${row.Dealer_Office_Name||""}</td><td>${row.Dealer_Type||""}</td>
+        <td>${row.Address||""}</td><td>${row.Pincode||""}</td><td>${row.Mobile_No||""}</td>
+        <td>${row.Phone_No||""}</td><td>${row.Fax_No||""}</td><td>${row.Email_Id||""}</td>
+        <td>${row.Contact_Person||""}</td><td>${row.Contact_Person_No||""}</td><td>${row.Active||""}</td>
+        <td>${row.State||""}</td><td>${row.State_LGD_Code||""}</td><td>${row.Division||""}</td>
+        <td>${row.Division_LGD_Code||""}</td><td>${row.District||""}</td><td>${row.District_LGD_Code||""}</td>
+        <td>${row.Block||""}</td><td>${row.Block_LGD_Code||""}</td><td>${row.GST_TIN||""}</td>
+        <td>${row.Status||""}</td><td>${row.Lisence_No||""}</td><td>${row.Lisence_Active||""}</td>
+        <td>${row.Valid_To_date||""}</td><td>${row.Target_Date||""}</td><td>${row.Disposal_Date||""}</td>
+        <td>${row.Registration_No||""}</td><td>${row.Registration_Date||""}</td>
+        <td>${row.Registration_Active||""}</td><td>${row.Service_Name||""}</td>
+        <td><span class="badge ${badgeColor(row.Category)}">${row.Category}</span></td>`;
+        tbody.appendChild(tr);
+    });
+}
+
+function badgeColor(c){ return c==="Valid"?"bg-success":c==="Duplicate"?"bg-warning":c==="Date Error"?"bg-info":"bg-danger"; }
+
+function enableButtons(){
+    document.getElementById("btnDownloadDuplicates").disabled=duplicates.length===0;
+    document.getElementById("btnDownloadErrors").disabled=errors.length===0;
+    document.getElementById("btnDownloadDateErrors").disabled=dateErrors.length===0;
+    document.getElementById("btnDownloadValid").disabled=valid.length===0;
+    document.getElementById("btnRemove").disabled=false;
+}
+
+function downloadExcel(arr,file){
+    let sheet=XLSX.utils.json_to_sheet(arr);
+    let wb=XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb,sheet,"Sheet1");
+    XLSX.writeFile(wb,file);
+}
+
+document.getElementById("btnDownloadDuplicates").onclick=()=>downloadExcel(duplicates,"Duplicates.xlsx");
+document.getElementById("btnDownloadErrors").onclick=()=>downloadExcel(errors,"Errors.xlsx");
+document.getElementById("btnDownloadDateErrors").onclick=()=>downloadExcel(dateErrors,"DateErrors.xlsx");
+document.getElementById("btnDownloadValid").onclick=()=>downloadExcel(valid,"ValidRecords.xlsx");
+
+document.getElementById("btnRemove").onclick=()=>{
+    document.getElementById("FU_Excel").value="";
+    document.getElementById("fileName").innerText="";
+    document.getElementById("progressBar").style.width="0%";
+    document.getElementById("progressBar").innerText="0%";
+};
+
+document.getElementById("btnClearAll").onclick=()=>location.reload();
+
+/* Live validation after edit */
+function liveValidation(){
+    const tbody=document.querySelector("#previewTable tbody");
+    duplicates=[]; errors=[]; dateErrors=[]; valid=[];
+    Array.from(tbody.rows).forEach(tr=>{
+        let row={};
+        Array.from(tr.cells).forEach((td,i)=>{
+            if(i===0) return; // skip index
+            let key=tbody.parentNode.querySelectorAll("th")[i].innerText.replace(/ /g,"_");
+            row[key]=td.innerText.trim();
+        });
+
+        const emailRegex=/^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        const mobileRegex=/^\d{10}$/;
+        const pincodeRegex=/^\d{6}$/;
+        const numberFields=["State_LGD_Code","District_LGD_Code","Division_LGD_Code","Block_LGD_Code"];
+        const check=()=>!row.Office_Type||!row.Dealer_Office_Name||!row.Mobile_No||!row.State||!row.GST_TIN;
+        const dateErr=!checkDate(row.Valid_To_date)||!checkDate(row.Target_Date)||!checkDate(row.Disposal_Date)||!checkDate(row.Registration_Date);
+        if(check()) row.Category="Error",errors.push(row);
+        else if(!mobileRegex.test(row.Mobile_No)||(row.Pincode&&!pincodeRegex.test(row.Pincode))||(row.Email_Id&&!emailRegex.test(row.Email_Id))||numberFields.some(f=>row[f]&&!Number.isInteger(Number(row[f])))) row.Category="Error",errors.push(row);
+        else if(dateErr) row.Category="Date Error",dateErrors.push(row);
+        else row.Category="Valid",valid.push(row);
+        tr.cells[tr.cells.length-1].innerHTML=`<span class="badge ${badgeColor(row.Category)}">${row.Category}</span>`;
+    });
+    updateCounts();
+    let percent=Math.round((valid.length/tbody.rows.length)*100);
+    let bar=document.getElementById("progressBar");
+    bar.style.width=percent+"%";
+    bar.innerText=percent+"%";
+}
+</script>
+
+</body>
+</html>

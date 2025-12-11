@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <title>Excel Field Checker</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        .container {
+            max-width: 1200px
+        }
+
+        .table-preview {
+            max-height: 420px;
+            overflow: auto
+        }
+
+        .badge-cat {
+            padding: .45em .6em
+        }
+
+        .row-valid {
+            background: #e9f7ef
+        }
+
+        .row-error {
+            background: #fff5f5
+        }
+
+        .row-warning {
+            background: #fff9e6
+        }
+
+        .col-highlight {
+            box-shadow: inset 4px 0 0 rgba(0, 123, 255, 0.08)
+        }
+
+        .cell-hl-date {
+            background: rgba(13, 110, 253, 0.04)
+        }
+
+        .cell-hl-mobile {
+            background: rgba(25, 135, 84, 0.04)
+        }
+
+        .cell-hl-email {
+            background: rgba(220, 53, 69, 0.04)
+        }
+
+        /* colorful header and stat cards */
+        .page-header {
+            background: linear-gradient(90deg, #4f46e5, #06b6d4);
+            color: #fff
+        }
+
+        .stat-card {
+            border-radius: 8px;
+            box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06)
+        }
+
+        .table-preview table thead th {
+            position: sticky;
+            top: 0;
+            background: linear-gradient(180deg, #f8fafc, #fff);
+            z-index: 2
+        }
+
+        .table-preview table tbody tr:hover {
+            transform: translateY(-1px);
+            transition: all .12s ease;
+            box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06)
+        }
+
+        .sql-type-select {
+            min-width: 210px
+        }
+
+        /* header palette (cycle these classes) */
+        .hdr-0 {
+            background: linear-gradient(90deg, #ff7a7a, #ffb199);
+            color: #111
+        }
+
+        .hdr-1 {
+            background: linear-gradient(90deg, #ffd86b, #ffe29a);
+            color: #111
+        }
+
+        .hdr-2 {
+            background: linear-gradient(90deg, #b7f3a7, #d4ffd9);
+            color: #111
+        }
+
+        .hdr-3 {
+            background: linear-gradient(90deg, #9fe7ff, #cfefff);
+            color: #111
+        }
+
+        .hdr-4 {
+            background: linear-gradient(90deg, #d6b3ff, #ecd8ff);
+            color: #111
+        }
+
+        .hdr-5 {
+            background: linear-gradient(90deg, #ffc4e1, #ffe7f5);
+            color: #111
+        }
+
+        /* cell type colors */
+        .cell-type-number {
+            background: rgba(59, 130, 246, 0.04)
+        }
+
+        .cell-type-date {
+            background: rgba(14, 165, 233, 0.04)
+        }
+
+        .cell-type-email {
+            background: rgba(168, 85, 247, 0.04)
+        }
+
+        .cell-type-mobile {
+            background: rgba(16, 185, 129, 0.04)
+        }
+
+        .cell-type-gstin {
+            background: rgba(250, 204, 21, 0.04)
+        }
+
+        .cell-type-pincode {
+            background: rgba(239, 68, 68, 0.04)
+        }
+
+        .cell-empty {
+            background: rgba(148, 163, 184, 0.04)
+        }
+
+        .legend {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            margin-bottom: 8px
+        }
+
+        .legend .chip {
+            padding: 6px 10px;
+            border-radius: 999px;
+            font-size: .8rem
+        }
+
+        .color-toggle {
+            cursor: pointer
+        }
+    </style>
+    <style>
+        .chip-hdr {
+            background: #ffb199
+        }
+
+        .chip-num {
+            background: rgba(59, 130, 246, 0.12)
+        }
+
+        .chip-date {
+            background: rgba(14, 165, 233, 0.12)
+        }
+
+        .chip-email {
+            background: rgba(168, 85, 247, 0.12)
+        }
+
+        .chip-mobile {
+            background: rgba(16, 185, 129, 0.12)
+        }
+
+        .chip-gstin {
+            background: rgba(250, 204, 21, 0.12)
+        }
+
+        .chip-pincode {
+            background: rgba(239, 68, 68, 0.08)
+        }
+
+        .hidden-file {
+            display: none
+        }
+    </style>
+    <style>
+        .icon-btn {
+            width: 40px;
+            height: 40px;
+            padding: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px
+        }
+
+        .icon-btn i {
+            font-size: 1.05rem
+        }
+    </style>
+    <style>
+        .row-duplicate {
+            background: linear-gradient(90deg, #fff7cc, #fff3d6)
+        }
+
+        .row-dateerror {
+            background: linear-gradient(90deg, #e6f7ff, #f0fbff)
+        }
+
+        .row-valid {
+            background: transparent
+        }
+
+        .row-error {
+            background: transparent
+        }
+
+        .row-other {
+            background: #f3f4f6
+        }
+
+        /* ensure all cells in valid/error rows use requested rgba colors */
+        .row-valid td {
+            background: rgba(16, 185, 129, 0.12) !important
+        }
+
+        .row-error td {
+            background: rgba(239, 68, 68, 0.08) !important
+        }
+
+        /* dark header theme for grid */
+        .table-preview table thead th {
+            background: linear-gradient(180deg, #0b1220, #0f1724) !important;
+            color: #fff !important;
+        }
+
+        .table-preview table thead th .sort-indicator {
+            color: #d1d5db
+        }
+    </style>
+    </style>
+    </style>
+</head>
+
+<body class="p-3">
+    <div class="container">
+        <div class="page-header p-3 rounded mb-3">
+            <div class="d-flex align-items-center justify-content-between">
+                <h4 class="mb-0">Excel Field Checker</h4>
+                <div class="small opacity-75">Interactive field validation & SQL mapping</div>
+            </div>
+        </div>
+
+        <div class="card mb-3 p-3">
+            <div class="row g-2 align-items-end">
+                <div class="col-md-4">
+                    <label class="form-label">Upload Excel (.xlsx)</label>
+                    <input id="fileInput" type="file" accept=".xlsx" class="form-control" title="Upload Excel file" />
+                </div>
+                <div class="col-md-2">
+                    <button id="btnParse" class="btn btn-primary w-100">Load & Parse</button>
+                </div>
+                <div class="col-md-6">
+                    <div id="fileMeta" class="text-muted small"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="controls" class="card mb-3 p-3 d-none">
+            <div class="row">
+                <div class="col-md-6">
+                    <h6>Columns</h6>
+                    <div id="colsList" class="mb-2"></div>
+                    <small class="text-muted">Select one or more columns to inspect.</small>
+                </div>
+
+                <div class="col-md-6">
+                    <h6>Checks / Options</h6>
+                    <div class="mb-2">
+                        <label class="form-label">Unique combination (multi-select)</label>
+                        <select id="uniqueCols" class="form-select" multiple size="4"
+                            title="Select columns for unique combination"></select>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label">Date column (treat as date)</label>
+                        <select id="dateCol" class="form-select" title="Select date column">
+                            <option value="">-- none --</option>
+                        </select>
+                    </div>
+                    <div class="mb-2 row g-2">
+                        <div class="col-8">
+                            <label class="form-label">Type check (column)</label>
+                            <select id="typeCol" class="form-select" title="Select column to type-check">
+                                <option value="">-- none --</option>
+                            </select>
+                        </div>
+                        <div class="col-4">
+                            <label class="form-label">Expected type</label>
+                            <select id="typeExpect" class="form-select" title="Select expected data type">
+                                <option value="string">String</option>
+                                <option value="number">Number</option>
+                                <option value="date">Date</option>
+                                <option value="email">Email</option>
+                                <option value="mobile">Mobile</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-2 row g-2">
+                        <div class="col-6">
+                            <label class="form-label">Null-check columns (multi)</label>
+                            <select id="nullCols" class="form-select" multiple size="4"
+                                title="Select columns to check for nulls"></select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">Mobile column</label>
+                            <select id="mobileCol" class="form-select" title="Mobile column">
+                                <option value="">-- none --</option>
+                            </select>
+                            <label class="form-label mt-2">Email column</label>
+                            <select id="emailCol" class="form-select" title="Email column">
+                                <option value="">-- none --</option>
+                            </select>
+                            <label class="form-label mt-2">Name column (duplicate check)</label>
+                            <select id="nameCol" class="form-select" title="Name column for duplicate check">
+                                <option value="">-- none --</option>
+                            </select>
+                            <label class="form-label mt-2">Aadhaar column</label>
+                            <select id="aadhaarCol" class="form-select" title="Aadhaar column">
+                                <option value="">-- none --</option>
+                            </select>
+                            <label class="form-label mt-2">PAN column</label>
+                            <select id="panCol" class="form-select" title="PAN column">
+                                <option value="">-- none --</option>
+                            </select>
+                            <label class="form-label mt-2">Driving Licence column</label>
+                            <select id="dlCol" class="form-select" title="Driving Licence column">
+                                <option value="">-- none --</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2 mt-2 align-items-center">
+                        <button id="btnRunChecks" class="btn btn-success">Run Checks</button>
+                        <button id="btnShowAll" class="btn btn-secondary">Show All</button>
+                        <button id="btnReset" class="btn btn-outline-secondary">Reset</button>
+                        <div class="ms-auto d-flex gap-1">
+                            <button id="btnDownloadValid" class="btn btn-outline-primary icon-btn" disabled
+                                title="Download Valid (XLSX)" aria-label="Download Valid"><i
+                                    class="fa-solid fa-file-excel"></i></button>
+                            <button id="btnDownloadErrors" class="btn btn-outline-danger icon-btn" disabled
+                                title="Download Errors (XLSX)" aria-label="Download Errors"><i
+                                    class="fa-solid fa-file-circle-exclamation"></i></button>
+                            <button id="btnExportValidJson" class="btn btn-outline-primary icon-btn" disabled
+                                title="Export Valid (JSON)" aria-label="Export Valid JSON"><i
+                                    class="fa-solid fa-file-code"></i></button>
+                            <button id="btnExportErrorsJson" class="btn btn-outline-danger icon-btn" disabled
+                                title="Export Errors (JSON)" aria-label="Export Errors JSON"><i
+                                    class="fa-solid fa-file-arrow-down"></i></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <hr />
+            <div id="sqlMapping" class="mt-2">
+                <h6>SQL Column Mapping (optional)</h6>
+                <div id="mappingRows" class="row g-2"></div>
+                <div class="mt-2 d-flex gap-2">
+                    <button id="btnExportMapping" class="btn btn-sm btn-outline-secondary">Export Mapping JSON</button>
+                    <input id="importMappingFile" type="file" accept="application/json" class="hidden-file" />
+                    <button id="btnImportMapping" class="btn btn-sm btn-outline-secondary">Import Mapping JSON</button>
+                </div>
+                <div class="small text-muted mt-2">Pick expected MS SQL type for each column. These checks run during
+                    validation and add remarks when values don't match the expected SQL type/length.</div>
+            </div>
+        </div>
+
+        <div id="summary" class="mb-3 d-none">
+            <div class="row g-2">
+                <div class="col-md-2">
+                    <div class="card p-2 text-center stat-card text-white bg-primary">
+                        <div class="small">Total</div>
+                        <div id="totalCount" class="fw-bold fs-5">0</div>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="card p-2 text-center stat-card text-white bg-success">
+                        <div class="small">Valid</div>
+                        <div id="validCount" class="fw-bold fs-5">0</div>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="card p-2 text-center stat-card text-white bg-danger">
+                        <div class="small">Errors</div>
+                        <div id="errorCount" class="fw-bold fs-5">0</div>
+                    </div>
+                </div>
+                <div class="col-md-6 text-end">
+                    <div id="summaryMsg" class="small text-muted"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card p-3">
+            <div id="tableLegend" class="mb-2 d-none">
+                <div class="legend">
+                    <div class="chip chip-hdr">Header Palette</div>
+                    <div class="chip chip-num">Number</div>
+                    <div class="chip chip-date">Date</div>
+                    <div class="chip chip-email">Email</div>
+                    <div class="chip chip-mobile">Mobile</div>
+                    <div class="chip chip-gstin">GSTIN</div>
+                    <div class="chip chip-pincode">Pincode</div>
+                    <div class="ms-auto color-toggle"><label class="form-check form-switch mb-0"><input
+                                id="colorModeToggle" class="form-check-input" type="checkbox" checked> Colors</label>
+                    </div>
+                </div>
+            </div>
+            <div class="table-preview mb-2">
+                <table id="resultTable" class="table table-sm table-hover table-striped table-bordered">
+                    <thead></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // utilities
+        function show(el) { el.classList.remove('d-none'); }
+        function hide(el) { el.classList.add('d-none'); }
+
+        // read file and parse as array-of-arrays to preserve row numbers
+        let rawRows = []; // array of arrays including header row at index 0
+        let headers = [];
+        let records = []; // array of objects {RowNumber, ...}
+
+        const fileInput = document.getElementById('fileInput');
+        const btnParse = document.getElementById('btnParse');
+        const fileMeta = document.getElementById('fileMeta');
+        const controls = document.getElementById('controls');
+        const colsList = document.getElementById('colsList');
+        const uniqueCols = document.getElementById('uniqueCols');
+        const dateCol = document.getElementById('dateCol');
+        const typeCol = document.getElementById('typeCol');
+        const typeExpect = document.getElementById('typeExpect');
+        const nullCols = document.getElementById('nullCols');
+        const mobileCol = document.getElementById('mobileCol');
+        const emailCol = document.getElementById('emailCol');
+        const nameCol = document.getElementById('nameCol');
+        const aadhaarCol = document.getElementById('aadhaarCol');
+        const panCol = document.getElementById('panCol');
+        const dlCol = document.getElementById('dlCol');
+        const btnRunChecks = document.getElementById('btnRunChecks');
+        const resultTable = document.getElementById('resultTable');
+        const btnReset = document.getElementById('btnReset');
+        const btnDownloadValid = document.getElementById('btnDownloadValid');
+        const btnDownloadErrors = document.getElementById('btnDownloadErrors');
+        const btnExportValidJson = document.getElementById('btnExportValidJson');
+        const btnExportErrorsJson = document.getElementById('btnExportErrorsJson');
+        const btnExportMapping = document.getElementById('btnExportMapping');
+        const btnImportMapping = document.getElementById('btnImportMapping');
+        const importMappingFile = document.getElementById('importMappingFile');
+        const btnShowAll = document.getElementById('btnShowAll');
+        const summary = document.getElementById('summary');
+        const totalCount = document.getElementById('totalCount');
+        const validCount = document.getElementById('validCount');
+        const errorCount = document.getElementById('errorCount');
+        const summaryMsg = document.getElementById('summaryMsg');
+
+        function checkDate(d) {
+            if (!d) return false;
+            d = d.toString().trim();
+            const iso = /^(\d{4})-(\d{2})-(\d{2})$/;
+            const dmy = /^(\d{2})\/(\d{2})\/(\d{4})$/;
+            let m;
+            if ((m = d.match(iso))) {
+                const yyyy = Number(m[1]), mm = Number(m[2]), dd = Number(m[3]);
+                const dt = new Date(yyyy, mm - 1, dd);
+                return dt && dt.getFullYear() === yyyy && (dt.getMonth() + 1) === mm && dt.getDate() === dd;
+            }
+            if ((m = d.match(dmy))) {
+                const dd = Number(m[1]), mm = Number(m[2]), yyyy = Number(m[3]);
+                const dt = new Date(yyyy, mm - 1, dd);
+                return dt && dt.getFullYear() === yyyy && (dt.getMonth() + 1) === mm && dt.getDate() === dd;
+            }
+            return false;
+        }
+
+        // parse many common date formats and return ISO yyyy-mm-dd or null
+        function parseDateFlexible(d) {
+            if (!d && d !== 0) return null;
+            let s = String(d).trim();
+            if (!s) return null;
+            // remove common ordinal suffixes (1st, 2nd, 3rd)
+            s = s.replace(/(\d+)(st|nd|rd|th)\b/i, '$1');
+            // ISO full datetime -> take date portion
+            const isoDateTime = /^(\d{4})-(\d{2})-(\d{2})(?:[T\s](\d{2}):(\d{2})(?::(\d{2}))?)?/;
+            let m = s.match(isoDateTime);
+            if (m) { const yyyy = Number(m[1]), mm = Number(m[2]), dd = Number(m[3]); if (isValidDateParts(yyyy, mm, dd)) return formatISO(yyyy, mm, dd); }
+
+            // common separators: / or - or .
+            // patterns: dd/mm/yyyy, mm/dd/yyyy, yyyy/mm/dd, dd-mm-yyyy, yyyy.mm.dd
+            const dmy1 = /^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{2,4})$/;
+            m = s.match(dmy1);
+            if (m) {
+                let a = Number(m[1]), b = Number(m[2]), c = Number(m[3]);
+                // normalize 2-digit year
+                if (c < 100) c = (c > 50) ? 1900 + c : 2000 + c;
+                // heuristics: if first part > 31 then assume yyyy-mm-dd
+                if (a > 31) { const yyyy = a, mm = b, dd = c; if (isValidDateParts(yyyy, mm, dd)) return formatISO(yyyy, mm, dd); }
+                // if third part is year (4 digits) -> treat as dd/mm/yyyy if a>12 else mm/dd/yyyy ambiguous - prefer dd/mm
+                if (c >= 1000) {
+                    // prefer dd/mm/yyyy
+                    const dd = a, mm = b, yyyy = c; if (isValidDateParts(yyyy, mm, dd)) return formatISO(yyyy, mm, dd);
+                    // fallback mm/dd/yyyy
+                    if (isValidDateParts(yyyy, dd, mm)) return formatISO(yyyy, dd, mm);
+                }
+                // fallback: if first <=12 and second>12 assume mm/dd/yyyy
+                if (a <= 12 && b > 12) { const mm = a, dd = b, yyyy = c; if (isValidDateParts(yyyy, mm, dd)) return formatISO(yyyy, mm, dd); }
+                // last fallback dd/mm/yyyy
+                if (isValidDateParts(c, b, a)) return formatISO(c, b, a);
+            }
+
+            // try RFC like Month name day, year e.g., Mar 5 2020
+            const verbose = /^(\w+)[\s\-](\d{1,2}),?\s*(\d{4})$/i;
+            m = s.match(verbose);
+            if (m) { const mm = monthNameToNumber(m[1]); const dd = Number(m[2]); const yyyy = Number(m[3]); if (mm && isValidDateParts(yyyy, mm, dd)) return formatISO(yyyy, mm, dd); }
+
+            return null;
+        }
+
+        function isValidDateParts(yyyy, mm, dd) {
+            if (!Number.isInteger(yyyy) || !Number.isInteger(mm) || !Number.isInteger(dd)) return false;
+            if (mm < 1 || mm > 12 || dd < 1 || dd > 31) return false;
+            const dt = new Date(yyyy, mm - 1, dd);
+            return dt && dt.getFullYear() === yyyy && (dt.getMonth() + 1) === mm && dt.getDate() === dd;
+        }
+
+        function formatISO(yyyy, mm, dd) {
+            return `${String(yyyy).padStart(4, '0')}-${String(mm).padStart(2, '0')}-${String(dd).padStart(2, '0')}`;
+        }
+
+        function monthNameToNumber(name) {
+            if (!name) return null; const m = name.toString().substr(0, 3).toLowerCase(); const months = { jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6, jul: 7, aug: 8, sep: 9, oct: 10, nov: 11, dec: 12 }; return months[m] || null;
+        }
+
+        function normalizeCell(v) { if (v === null || v === undefined) return ''; return String(v).trim(); }
+        function normalizeEmail(v) { return normalizeCell(v).toLowerCase(); }
+        function normalizeMobile(v) { let m = normalizeCell(v).replace(/[^0-9]/g, ''); if (m.length === 12 && m.startsWith('91')) m = m.slice(2); if (m.length === 11 && m.startsWith('0')) m = m.slice(1); return m; }
+
+        function buildColumnsUI() {
+            colsList.innerHTML = '';
+            uniqueCols.innerHTML = '';
+            dateCol.innerHTML = '<option value="">-- none --</option>';
+            typeCol.innerHTML = '<option value="">-- none --</option>';
+            nullCols.innerHTML = '';
+            mobileCol.innerHTML = '<option value="">-- none --</option>';
+            emailCol.innerHTML = '<option value="">-- none --</option>';
+            nameCol.innerHTML = '<option value="">-- none --</option>';
+            document.getElementById('mappingRows').innerHTML = '';
+
+            headers.forEach(h => {
+                const id = 'c_' + Math.random().toString(36).slice(2, 8);
+                const chk = document.createElement('div'); chk.className = 'form-check';
+                chk.innerHTML = `<input class="form-check-input" type="checkbox" value="${h}" id="${id}" checked><label class="form-check-label" for="${id}">${h}</label>`;
+                colsList.appendChild(chk);
+
+                const opt = document.createElement('option'); opt.value = h; opt.innerText = h;
+                uniqueCols.appendChild(opt.cloneNode(true));
+                dateCol.appendChild(opt.cloneNode(true));
+                typeCol.appendChild(opt.cloneNode(true));
+                nullCols.appendChild(opt.cloneNode(true));
+                mobileCol.appendChild(opt.cloneNode(true));
+                emailCol.appendChild(opt.cloneNode(true));
+                nameCol.appendChild(opt.cloneNode(true));
+                aadhaarCol.appendChild(opt.cloneNode(true));
+                panCol.appendChild(opt.cloneNode(true));
+                dlCol.appendChild(opt.cloneNode(true));
+
+                // add mapping row for SQL types
+                const mapDiv = document.createElement('div'); mapDiv.className = 'col-md-6';
+                mapDiv.innerHTML = `
+      <div class="input-group input-group-sm">
+        <span class="input-group-text" style="min-width:160px">${h}</span>
+        <select class="form-select form-select-sm sql-type-select" data-col="${h}">
+          <option value="">(no mapping)</option>
+          <option value="INT">INT</option>
+          <option value="BIGINT">BIGINT</option>
+          <option value="DECIMAL">DECIMAL(p,s)</option>
+          <option value="FLOAT">FLOAT</option>
+          <option value="BIT">BIT</option>
+          <option value="DATE">DATE</option>
+          <option value="DATETIME">DATETIME</option>
+          <option value="VARCHAR">VARCHAR(n)</option>
+          <option value="NVARCHAR">NVARCHAR(n)</option>
+          <option value="CHAR">CHAR(n)</option>
+          <option value="GUID">GUID</option>
+          <option value="GSTIN">GSTIN</option>
+          <option value="PINCODE">PINCODE</option>
+          <option value="EMAIL">EMAIL</option>
+          <option value="MOBILE">MOBILE</option>
+        </select>
+        <input class="form-control form-control-sm sql-type-arg" placeholder="arg e.g. 10 or 10,2" data-col="${h}" />
+      </div>`;
+                document.getElementById('mappingRows').appendChild(mapDiv);
+            });
+        }
+
+        // Verhoeff algorithm for Aadhaar validation
+        const verhoeff = (function () {
+            const d = [
+                [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], [1, 2, 3, 4, 0, 6, 7, 8, 9, 5], [2, 3, 4, 0, 1, 7, 8, 9, 5, 6], [3, 4, 0, 1, 2, 8, 9, 5, 6, 7], [4, 0, 1, 2, 3, 9, 5, 6, 7, 8],
+                [5, 9, 8, 7, 6, 0, 4, 3, 2, 1], [6, 5, 9, 8, 7, 1, 0, 4, 3, 2], [7, 6, 5, 9, 8, 2, 1, 0, 4, 3], [8, 7, 6, 5, 9, 3, 2, 1, 0, 4], [9, 8, 7, 6, 5, 4, 3, 2, 1, 0]
+            ];
+            const p = [
+                [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], [1, 5, 7, 6, 2, 8, 3, 0, 9, 4], [5, 8, 0, 3, 7, 9, 6, 1, 4, 2], [8, 9, 1, 6, 0, 4, 3, 5, 2, 7],
+                [9, 4, 5, 3, 1, 2, 6, 8, 7, 0], [4, 2, 8, 6, 5, 7, 3, 9, 0, 1], [2, 7, 9, 3, 8, 0, 6, 4, 1, 5], [7, 0, 4, 6, 9, 1, 3, 2, 5, 8]
+            ];
+            const inv = [0, 4, 3, 2, 1, 5, 6, 7, 8, 9];
+            function validate(num) {
+                if (!/^[0-9]{12}$/.test(num)) return false;
+                let c = 0; const arr = num.split('').map(x => Number(x)).reverse();
+                for (let i = 0; i < arr.length; i++) { c = d[c][p[(i % 8)][arr[i]]]; }
+                return c === 0;
+            }
+            return { validate };
+        })();
+
+        function validatePAN(val) { if (!val) return false; const v = String(val).toUpperCase().trim(); return /^[A-Z]{5}[0-9]{4}[A-Z]$/.test(v); }
+        function validateDL(val) {
+            if (!val) return false; const v = String(val).toUpperCase().trim(); // lenient rule: starts with 2 letters (state) then digits/letters 6-15
+            return /^[A-Z]{2}[0-9A-Z\s\-]{5,15}$/.test(v);
+        }
+
+        btnParse.addEventListener('click', () => {
+            const file = fileInput.files[0];
+            if (!file) { alert('Please choose a file'); return; }
+            const reader = new FileReader();
+            reader.readAsArrayBuffer(file);
+            reader.onload = (e) => {
+                const wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
+                const sheet = wb.Sheets[wb.SheetNames[0]];
+                const arr = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+                if (!arr || arr.length < 1) { alert('Sheet empty'); return; }
+                rawRows = arr; headers = arr[0].map(h => String(h).trim());
+                // build records with original Excel row numbers (1-based)
+                records = [];
+                for (let r = 1; r < arr.length; r++) {
+                    const rowArr = arr[r];
+                    const obj = { RowNumber: r + 1 };
+                    headers.forEach((h, ci) => obj[h] = typeof rowArr[ci] === 'undefined' ? '' : rowArr[ci]);
+                    records.push(obj);
+                }
+                fileMeta.innerText = `${file.name} — ${records.length} data rows (headers: ${headers.join(', ')})`;
+                show(controls);
+                show(summary);
+                show(document.getElementById('tableLegend'));
+                buildColumnsUI();
+                renderTable(records);
+            };
+        });
+
+        function renderTable(rows) {
+            // build header
+            const thead = resultTable.querySelector('thead');
+            const tbody = resultTable.querySelector('tbody');
+            thead.innerHTML = '';
+            tbody.innerHTML = '';
+            if (!records.length) return;
+            // avoid duplicate Remark/Category if headers already include them
+            const sanitizedHeaders = headers.filter(h => !/^(Remark|Category|RowNumber)$/i.test(h));
+            // do not render RowNumber column in the grid (keeps underlying data but hides in UI)
+            const hdr = [...sanitizedHeaders, 'Remark', 'Category'];
+            const trh = document.createElement('tr'); hdr.forEach((h, idx) => { const th = document.createElement('th'); th.innerText = h; th.classList.add('hdr-' + (idx % 6)); trh.appendChild(th); }); thead.appendChild(trh);
+            // add sort indicator spans and wire header clicks (delegated)
+            const ths = thead.querySelectorAll('th');
+            ths.forEach((th, idx) => {
+                const colName = hdr[idx];
+                const span = document.createElement('span'); span.className = 'sort-indicator ms-2'; span.style.fontSize = '0.8rem'; span.innerText = '';
+                th.appendChild(span);
+                th.dataset.col = colName;
+                th.style.cursor = 'pointer';
+            });
+            // track last rendered rows so sorting acts on the current view
+            window.__lastRenderedRows = rows.slice();
+            window.__sortState = window.__sortState || { col: null, dir: null };
+
+            // header click handler (delegated)
+            thead.onclick = function (ev) {
+                let th = ev.target;
+                while (th && th.tagName && th.tagName.toLowerCase() !== 'th') th = th.parentElement;
+                if (!th) return;
+                const col = th.dataset.col;
+                if (!col) return;
+                // toggle state: null -> asc -> desc -> null
+                const s = window.__sortState;
+                if (s.col !== col) { s.col = col; s.dir = 'asc'; }
+                else if (s.dir === 'asc') s.dir = 'desc';
+                else s.col = null, s.dir = null;
+                // update indicators
+                thead.querySelectorAll('.sort-indicator').forEach(si => si.innerText = '');
+                if (s.col && s.dir) {
+                    const thsel = Array.from(ths).find(x => x.dataset.col === s.col);
+                    if (thsel) thsel.querySelector('.sort-indicator').innerText = s.dir === 'asc' ? '▲' : '▼';
+                }
+                // perform sort and re-render
+                let toSort = window.__lastRenderedRows || [];
+                if (!s.col) { renderTable(toSort); return; }
+                const sorted = toSort.slice().sort((a, b) => {
+                    const va = (a[s.col] === undefined || a[s.col] === null) ? '' : String(a[s.col]).trim();
+                    const vb = (b[s.col] === undefined || b[s.col] === null) ? '' : String(b[s.col]).trim();
+                    // empty values to end
+                    if (va === '' && vb === '') return 0;
+                    if (va === '') return 1;
+                    if (vb === '') return -1;
+                    // date check
+                    const da = parseDateFlexible(va); const db = parseDateFlexible(vb);
+                    if (da && db) { if (da < db) return s.dir === 'asc' ? -1 : 1; if (da > db) return s.dir === 'asc' ? 1 : -1; return 0; }
+                    // numeric check
+                    const na = Number(va); const nb = Number(vb);
+                    if (!Number.isNaN(na) && !Number.isNaN(nb)) { if (na < nb) return s.dir === 'asc' ? -1 : 1; if (na > nb) return s.dir === 'asc' ? 1 : -1; return 0; }
+                    // fallback string compare
+                    const cmp = va.localeCompare(vb, undefined, { sensitivity: 'base', numeric: true });
+                    return s.dir === 'asc' ? cmp : -cmp;
+                });
+                // update lastRenderedRows and render
+                window.__lastRenderedRows = sorted;
+                renderTable(sorted);
+            };
+
+            rows.forEach((r, i) => {
+                const tr = document.createElement('tr');
+                // color rows by category (distinct classes)
+                const cat = (r.Category || '').toString().toLowerCase();
+                if (cat === 'valid') tr.classList.add('row-valid');
+                else if (cat === 'error') tr.classList.add('row-error');
+                else if (cat === 'date error' || cat === 'dateerror' || cat === 'date-error') tr.classList.add('row-dateerror');
+                else if (cat.includes('duplicate') || cat.includes('unique')) tr.classList.add('row-duplicate');
+                else tr.classList.add('row-other');
+
+                hdr.forEach(h => {
+                    const td = document.createElement('td'); td.style.verticalAlign = 'middle';
+                    let val = '';
+                    // always use computed Remark/Category at the end to avoid duplicates
+                    if (/^Remark$/i.test(h)) val = r.Remark || '';
+                    else if (/^Category$/i.test(h)) val = r.Category || '';
+                    else val = (typeof r[h] === 'undefined') ? '' : r[h];
+
+                    // for Category column render colored badge
+                    if (/^Category$/i.test(h)) {
+                        const span = document.createElement('span');
+                        const lc = String(val || '').toLowerCase();
+                        if (lc === 'valid') span.className = 'badge bg-success';
+                        else if (lc.includes('duplicate') || lc.includes('unique')) span.className = 'badge bg-warning text-dark';
+                        else if (lc === 'date error' || lc === 'dateerror' || lc === 'date-error') span.className = 'badge bg-info text-dark';
+                        else span.className = 'badge bg-danger';
+                        span.innerText = val || '';
+                        td.appendChild(span);
+                    } else {
+                        td.innerText = val;
+                    }
+                    // apply column highlight classes if requested
+                    if (window.__highlightCols && window.__highlightCols[h]) td.classList.add(window.__highlightCols[h]);
+                    // apply color mode cell type classes when enabled
+                    try {
+                        if (window.__colorMode) {
+                            const v = String(val || '');
+                            if (v === '') td.classList.add('cell-empty');
+                            else if (/^[+-]?\d+(?:\.\d+)?$/.test(v) && h !== 'GST_TIN') td.classList.add('cell-type-number');
+                            else if (checkDate(v)) td.classList.add('cell-type-date');
+                            else if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) td.classList.add('cell-type-email');
+                            else if (/^[0-9]{10}$/.test(normalizeMobile(v))) td.classList.add('cell-type-mobile');
+                            else if (/^[0-9A-Z]{15}$/.test(String(v).toUpperCase()) && /gst|gstin/i.test(h)) td.classList.add('cell-type-gstin');
+                            else if (/^[0-9]{6}$/.test(v) && /pin|pincode|zip/i.test(h)) td.classList.add('cell-type-pincode');
+                        }
+                    } catch (e) {/* ignore */ }
+                    tr.appendChild(td);
+                });
+                tbody.appendChild(tr);
+            });
+        }
+
+        function showCounts(valid, errors) { totalCount.innerText = records.length; validCount.innerText = valid.length; errorCount.innerText = errors.length; summaryMsg.innerText = `Processed ${records.length} rows.`; }
+
+        function runChecks() {
+            // collect selected columns
+            const uniqueSelected = Array.from(uniqueCols.selectedOptions).map(o => o.value).filter(Boolean);
+            const dateSelected = dateCol.value;
+            const typeSelected = typeCol.value; const expectType = typeExpect.value;
+            const nullSelected = Array.from(nullCols.selectedOptions).map(o => o.value).filter(Boolean);
+            const mobileSelected = mobileCol.value; const emailSelected = emailCol.value; const nameSelected = nameCol.value;
+            const aadhaarSelected = aadhaarCol.value; const panSelected = panCol.value; const dlSelected = dlCol.value;
+
+            // prepare result rows (clone original fields), and maintain maps for duplicates
+            const out = records.map(r => Object.assign({}, r));
+
+            // Duplicate detection for combinations
+            const comboMap = new Map();
+            if (uniqueSelected.length) {
+                out.forEach(r => {
+                    const key = uniqueSelected.map(c => normalizeCell(r[c]).toLowerCase()).join('||');
+                    const arr = comboMap.get(key) || []; arr.push(r.RowNumber); comboMap.set(key, arr);
+                });
+            }
+
+            // name duplicates
+            const nameMap = new Map();
+            if (nameSelected) {
+                out.forEach(r => {
+                    const key = normalizeCell(r[nameSelected]).toLowerCase();
+                    const arr = nameMap.get(key) || []; arr.push(r.RowNumber); nameMap.set(key, arr);
+                });
+            }
+
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+            const valid = [], errors = [];
+
+            out.forEach(r => {
+                const remarks = [];
+                // combo duplicates
+                if (uniqueSelected.length) {
+                    const key = uniqueSelected.map(c => normalizeCell(r[c]).toLowerCase()).join('||');
+                    const arr = comboMap.get(key) || [];
+                    if (arr.length > 1) { remarks.push('Duplicate'); }
+                }
+                // name duplication
+                if (nameSelected) {
+                    const k = normalizeCell(r[nameSelected]).toLowerCase(); const a = nameMap.get(k) || [];
+                    if (a.length > 1) { remarks.push('Name duplicate'); }
+                }
+                // date check
+                if (dateSelected) { const v = r[dateSelected]; if (v !== '' && !checkDate(v)) remarks.push('Invalid Date in ' + dateSelected); }
+                // type check
+                if (typeSelected) {
+                    const v = r[typeSelected]; if (expectType === 'number') { if (v !== '' && isNaN(Number(v))) remarks.push('Type Mismatch: not a number in ' + typeSelected); }
+                    if (expectType === 'date') { if (v !== '' && !checkDate(v)) remarks.push('Type Mismatch: not a date in ' + typeSelected); }
+                    if (expectType === 'email') { if (v !== '' && !emailRegex.test(normalizeEmail(v))) remarks.push('Type Mismatch: invalid email in ' + typeSelected); }
+                    if (expectType === 'mobile') { if (v !== '' && !/^[0-9]{10}$/.test(normalizeMobile(v))) remarks.push('Type Mismatch: invalid mobile in ' + typeSelected); }
+                }
+                // null checks
+                nullSelected.forEach(c => { if (normalizeCell(r[c]) === '') remarks.push('Null in ' + c); });
+                // mobile validation
+                if (mobileSelected) { const v = r[mobileSelected]; if (v !== '' && !/^[0-9]{10}$/.test(normalizeMobile(v))) remarks.push('Mobile Invalid in ' + mobileSelected); }
+                // email validation
+                if (emailSelected) { const v = r[emailSelected]; if (v !== '' && !emailRegex.test(normalizeEmail(v))) remarks.push('Email Invalid in ' + emailSelected); }
+
+                // Aadhaar/PAN/DL validations
+                if (aadhaarSelected) { const v = normalizeCell(r[aadhaarSelected]).replace(/[^0-9]/g, ''); if (v !== '' && !verhoeff.validate(v)) remarks.push('Invalid Aadhaar in ' + aadhaarSelected); }
+                if (panSelected) { const v = normalizeCell(r[panSelected]); if (v !== '' && !validatePAN(v)) remarks.push('Invalid PAN in ' + panSelected); }
+                if (dlSelected) { const v = normalizeCell(r[dlSelected]); if (v !== '' && !validateDL(v)) remarks.push('Invalid DL in ' + dlSelected); }
+
+                // SQL type mapping validations
+                try {
+                    const selects = document.querySelectorAll('.sql-type-select');
+                    selects.forEach(s => {
+                        const col = s.dataset.col; const t = s.value; if (!t) return;
+                        const arg = document.querySelector('.sql-type-arg[data-col="' + col + '"]')?.value.trim();
+                        const val = normalizeCell(r[col]);
+                        if (val === '') return; // skip empties here (null-check handled separately)
+                        if (t === 'INT') {
+                            if (!/^[-+]?\d+$/.test(val) || !Number.isInteger(Number(val))) remarks.push(`${col} expected INT`);
+                            else { const n = Number(val); if (n < -2147483648 || n > 2147483647) remarks.push(`${col} INT out of range`); }
+                        }
+                        else if (t === 'BIGINT') {
+                            if (!/^[-+]?\d+$/.test(val) || !Number.isInteger(Number(val))) remarks.push(`${col} expected BIGINT`);
+                        }
+                        else if (t === 'DECIMAL') {
+                            if (!/^[-+]?[0-9]+(\.[0-9]+)?$/.test(val)) remarks.push(`${col} expected DECIMAL`);
+                            else if (arg) { const parts = arg.split(',').map(x => Number(x)); if (parts.length === 2) { const [p, s] = parts; const dec = val.split('.'); const intlen = dec[0].replace(/^[-+]/, '').length; const frac = dec[1] ? dec[1].length : 0; if (intlen + frac > p || frac > s) remarks.push(`${col} DECIMAL(${p},${s}) overflow`); } }
+                        }
+                        else if (t === 'FLOAT') {
+                            if (!isFinite(Number(val))) remarks.push(`${col} expected FLOAT`);
+                        }
+                        else if (t === 'BIT') {
+                            if (!/^(0|1|true|false|yes|no)$/i.test(val)) remarks.push(`${col} expected BIT`);
+                        }
+                        else if (t === 'DATE' || t === 'DATETIME') {
+                            if (!checkDate(val)) remarks.push(`${col} expected DATE`);
+                        }
+                        else if (t === 'VARCHAR' || t === 'NVARCHAR' || t === 'CHAR') {
+                            if (arg) { const max = Number(arg.split(',')[0]); if (val.length > max) remarks.push(`${col} length>${max}`); }
+                        }
+                        else if (t === 'GUID') {
+                            if (!/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(val)) remarks.push(`${col} expected GUID`);
+                        }
+                        else if (t === 'GSTIN') {
+                            if (!/^[0-9A-Z]{15}$/.test(val.toUpperCase())) remarks.push(`${col} expected GSTIN (15 chars)`);
+                        }
+                        else if (t === 'PINCODE') {
+                            if (!/^\d{6}$/.test(val)) remarks.push(`${col} expected PINCODE (6 digits)`);
+                        }
+                        else if (t === 'EMAIL') {
+                            if (!emailRegex.test(normalizeEmail(val))) remarks.push(`${col} expected EMAIL`);
+                        }
+                        else if (t === 'MOBILE') {
+                            if (!/^[0-9]{10}$/.test(normalizeMobile(val))) remarks.push(`${col} expected MOBILE (10 digits)`);
+                        }
+                    });
+                } catch (e) { console.warn('mapping validation error', e); }
+
+                r.Remark = remarks.join('; ');
+                if (remarks.length) { r.Category = 'Error'; errors.push(r); } else { r.Category = 'Valid'; valid.push(r); }
+            });
+
+            // show preview (errors first)
+            const preview = errors.concat(valid);
+            // build column highlight map based on selected checks
+            window.__highlightCols = {};
+            if (dateSelected) window.__highlightCols[dateSelected] = 'cell-hl-date';
+            if (mobileSelected) window.__highlightCols[mobileSelected] = 'cell-hl-mobile';
+            if (emailSelected) window.__highlightCols[emailSelected] = 'cell-hl-email';
+            renderTable(preview);
+            showCounts(valid, errors);
+            btnDownloadValid.disabled = valid.length === 0;
+            btnDownloadErrors.disabled = errors.length === 0;
+
+            // store for export
+            window.__checker_valid = valid; window.__checker_errors = errors; window.__checker_all = preview;
+        }
+
+        btnRunChecks.addEventListener('click', runChecks);
+        btnShowAll.addEventListener('click', () => { renderTable(records); showCounts([], []); });
+
+        btnReset.addEventListener('click', () => {
+            // clear everything and reset UI
+            fileInput.value = '';
+            fileMeta.innerText = '';
+            rawRows = []; headers = []; records = [];
+            resultTable.querySelector('thead').innerHTML = '';
+            resultTable.querySelector('tbody').innerHTML = '';
+            hide(controls); hide(summary);
+            btnDownloadValid.disabled = true; btnDownloadErrors.disabled = true;
+            window.__checker_valid = []; window.__checker_errors = []; window.__checker_all = [];
+        });
+
+        // color mode toggle
+        window.__colorMode = true;
+        const colorToggleEl = document.getElementById('colorModeToggle');
+        if (colorToggleEl) {
+            colorToggleEl.addEventListener('change', (e) => { window.__colorMode = e.target.checked; renderTable(window.__checker_all || records); });
+        }
+
+        function downloadExcel(arr, filename) { if (!arr || !arr.length) { alert('No rows'); return; } const sheet = XLSX.utils.json_to_sheet(arr); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, sheet, 'Sheet1'); XLSX.writeFile(wb, filename); }
+
+        btnDownloadValid.addEventListener('click', () => downloadExcel(window.__checker_valid || [], 'Valid.xlsx'));
+        btnDownloadErrors.addEventListener('click', () => downloadExcel(window.__checker_errors || [], 'Errors.xlsx'));
+
+        // JSON export helper
+        function downloadJSON(obj, filename) {
+            const blob = new Blob([JSON.stringify(obj, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+        }
+
+        btnExportValidJson && btnExportValidJson.addEventListener('click', () => downloadJSON(window.__checker_valid || [], 'Valid.json'));
+        btnExportErrorsJson && btnExportErrorsJson.addEventListener('click', () => downloadJSON(window.__checker_errors || [], 'Errors.json'));
+
+        // mapping export/import
+        btnExportMapping && btnExportMapping.addEventListener('click', () => {
+            const selects = document.querySelectorAll('.sql-type-select');
+            const mapping = {};
+            selects.forEach(s => { const col = s.dataset.col; const t = s.value; const arg = document.querySelector('.sql-type-arg[data-col="' + col + '"]')?.value || ''; mapping[col] = { type: t || null, arg: arg || null }; });
+            downloadJSON(mapping, 'mapping.json');
+        });
+
+        btnImportMapping && btnImportMapping.addEventListener('click', () => importMappingFile.click());
+        importMappingFile && importMappingFile.addEventListener('change', (e) => {
+            const f = e.target.files && e.target.files[0]; if (!f) return; const reader = new FileReader(); reader.onload = (ev) => {
+                try { const obj = JSON.parse(ev.target.result); Object.keys(obj).forEach(col => { const sel = document.querySelector('.sql-type-select[data-col="' + col + '"]'); if (sel) { sel.value = obj[col].type || ''; } const arg = document.querySelector('.sql-type-arg[data-col="' + col + '"]'); if (arg) { arg.value = obj[col].arg || ''; } }); showAlert('Mapping imported', 'success'); } catch (err) { showAlert('Invalid mapping JSON', 'danger'); }
+            }; reader.readAsText(f);
+        });
+
+    </script>
+</body>
+
+</html>
