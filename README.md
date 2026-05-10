@@ -1,6 +1,3 @@
-
----
-
 # 👋 I'm Mohd Atif
 
 ### **Software Engineer | .NET Full-Stack & Database Architect**
@@ -113,9 +110,3 @@ I specialize in engineering **secure, high-performance environments** through a 
 **🔗 LinkedIn:** [[linkedin.com/in/atif-049b30151]()]() | **📧 Email:** `afatif96@gmail.com`
 
 ---
-
-### 📊 **GitHub Activity**
-
----
-
-✨ *Built with consistency, sagacity, and a focus on clean code.*
