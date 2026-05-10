@@ -2,10 +2,11 @@
 
 ### 💻 Full-Stack & Database Developer | ASP.NET • SQL Server • Node.js • Angular • Azure
 
-I’m a passionate and self-driven software developer with **3+ years of experience** in designing, building, and optimizing dynamic web and database solutions.  
-My expertise spans across **.NET technologies, SQL Server, SSIS/SSRS, Azure Cloud, MySQL, and modern JavaScript frameworks** like Angular and Node.js.
+I’m a passionate and self-driven Software Developer with 4+ years of experience in designing, developing, and optimizing scalable web applications and database-driven solutions. My expertise includes .NET technologies, SQL Server, SSIS/SSRS, Azure Cloud, MySQL, REST APIs, and modern JavaScript frameworks such as Angular and Node.js.
 
-I focus on writing clean, secure, and scalable code — with a strong foundation in database design, ETL, API development, automation, and UI/UX.
+I specialize in building secure, high-performance, and user-centric applications with a strong foundation in database architecture, ETL processes, backend development, cloud integration, automation, and responsive UI/UX design. I am proficient in writing clean, maintainable, and efficient code while following industry best practices and Agile methodologies.
+
+With hands-on experience in full-stack development, reporting solutions, API integration, performance optimization, and enterprise-level applications, I continuously focus on delivering reliable and scalable solutions that enhance business efficiency and user experience.
 
 ---
 
@@ -60,9 +61,8 @@ I’m passionate about innovation, problem-solving, and continuous learning.
 ---
 
 ## 📫 Connect With Me
-- **GitHub:** *You’re already here!*
-- **LinkedIn:** *(Add your link here)*  
-- **Portfolio/Website:** *(Add if available)*
+- **LinkedIn:** *(www.linkedin.com/in/
+atif-049b30151)*  
 
 ---
 
